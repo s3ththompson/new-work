@@ -1,5 +1,5 @@
 {
-  "name": "newwork",
+  "name": "new-work",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -7,12 +7,18 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "async": "^2.4.1",
+    "bel": "^5.0.0",
     "cheerio": "^0.22.0",
+    "create-html": "^3.0.0",
     "js-yaml": "^3.8.4",
     "lodash": "^4.17.4",
+    "prompt": "^1.0.0",
     "request": "^2.81.0"
+  },
+  "devDependencies": {
+    "prettier": "^1.3.1"
   }
 }

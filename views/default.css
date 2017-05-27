@@ -1,0 +1,51 @@
+body {
+  font-size: 32px;
+  font-family: "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+  color: #212121;
+  overflow-x: hidden;
+  line-height: 1.3em;
+  letter-spacing: .05em;
+  padding: 2%;
+  width: 96%;
+}
+
+li {
+  list-style-type: none;
+}
+
+a {
+  color: #212121;
+  text-decoration: none;
+  border-bottom: 0.08em solid rgba(0,0,0,.4);
+}
+
+.new {
+  color: #0cda7b;
+  padding: 0.1em 0.5em 0.05em;
+  font-size: 0.7em;
+  line-height: 1.3em;
+  border: 0.1em #0cda7b solid;
+  border-radius: 0.4em;
+  margin-left: 0.3em;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  animation: stolen alternate 1s infinite;
+}
+
+
+@keyframes stolen {
+  25% {
+    color: #4fded8;
+    border-color: #4fded8;
+  }
+
+  50% {
+    color: #0cda7b;
+    border-color: #0cda7b;
+  }
+
+  75% {
+    color: #4fded8;
+    border-color: #4fded8;
+  }
+}
