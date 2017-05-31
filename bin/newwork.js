@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const argv = require('minimist')(process.argv.slice(2));
 const fs = require('fs');
 const yaml = require('../lib/yaml');
@@ -14,8 +16,7 @@ const createHTML = require('create-html');
 const http = require('http');
 const opn = require('opn');
 
-const helpText = `
-  Usage: newwork <command> [options]
+const helpText = `Usage: newwork <command> [options]
 
   Commands:
     <default>                   Run 'newwork serve'
@@ -30,8 +31,7 @@ const helpText = `
     -o, --output <filename>     Output HTML file [default: sites.html]
     -l, --lockfile <filename>   Lockfile location [default: sites.lock]
     -p, --port=<n>              Bind 'newwork serve' to a port [default: 3030]
-    -h, --help                  Print usage
-`;
+    -h, --help                  Print usage`;
 
 var h = argv.h || argv.help;
 
@@ -91,12 +91,7 @@ function list() {
   function ls(input, cb) {
     yaml.read(input, (err, data) => {
       if (err) return cb(err, null);
-      cb(
-        null,
-        _.map(data.sites, o => {
-          return _.values(_.omit(o, ['selector']));
-        })
-      );
+      cb(null, _.map(data.sites, o => [o.name, o.url]));
     });
   }
 }
@@ -114,7 +109,11 @@ function remove() {
     removeEntry(argv.input, url, err => {
       if (err) exit(err);
       console.log(`Removed ${url} from ${argv.input}`);
-      exit();
+      removeEntry(argv.lockfile, url, err => {
+        if (err && err.message !== `site ${url} not found`) exit(err);
+        console.log(`Removed ${url} from ${argv.lockfile}`);
+        exit();
+      });
     });
   });
 
@@ -135,8 +134,8 @@ function remove() {
       });
   }
 
-  function removeEntry(input, url, cb) {
-    yaml.read(input, (err, data) => {
+  function removeEntry(file, url, cb) {
+    yaml.read(file, (err, data) => {
       if (err) return cb(err);
       if (
         !_.find(data.sites, site => {
@@ -148,26 +147,29 @@ function remove() {
       data.sites = _.reject(data.sites, site => {
         return compareUrls(site.url, url);
       });
-      yaml.write(input, data, cb);
+      yaml.write(file, data, cb);
     });
   }
 }
 
 function add() {
-  var url = argv._.shift();
+  var addedURL = argv._.shift();
 
-  prefetch = url
+  prefetch = addedURL
     ? validate
     : (_, cb) => {
         cb(null);
       };
 
-  prefetch(url, (err, lastModifiedDate, $) => {
+  prefetch(addedURL, (err, lastModifiedDate, $) => {
     if (err) exit(err);
-    var site = {
-      url: url,
-      lastModifiedDate: lastModifiedDate,
-      $: $
+    var _answers = {
+      site: {
+        url: addedURL,
+        lastModifiedDate: lastModifiedDate,
+        $,
+        $
+      }
     };
     inquirer
       .prompt([
@@ -190,7 +192,7 @@ function add() {
             });
           },
           when: function() {
-            return !site.url;
+            return !addedURL;
           }
         },
         {
@@ -198,7 +200,8 @@ function add() {
           name: 'name',
           message: 'Name',
           default: answers => {
-            var $ = site.$ || answers.site.$;
+            answers = Object.assign(_answers, answers);
+            var $ = answers.site.$;
             return $('title').text();
           }
         },
@@ -206,14 +209,12 @@ function add() {
           type: 'confirm',
           name: 'lastModified',
           message: answers => {
-            var lastModifiedDate =
-              site.lastModifiedDate || answers.site.lastModifiedDate;
-            return `Was the site last modified ${distanceInWordsToNow(lastModifiedDate)} ago?`;
+            answers = Object.assign(_answers, answers);
+            return `Was the site last modified ${distanceInWordsToNow(answers.site.lastModifiedDate)} ago?`;
           },
           when: answers => {
-            var lastModifiedDate =
-              site.lastModifiedDate || answers.site.lastModifiedDate;
-            return lastModifiedDate;
+            answers = Object.assign(_answers, answers);
+            return answers.site.lastModifiedDate;
           }
         },
         {
@@ -221,12 +222,11 @@ function add() {
           name: 'selector',
           message: `Choose an element selector to diff for changes`,
           when: answers => {
-            var lastModifiedDate =
-              site.lastModifiedDate || answers.site.lastModifiedDate;
-            return !lastModifiedDate || !answers.lastModified;
+            return !answers.lastModified;
           },
           validate: (selector, answers) => {
-            var $ = site.$ || answers.site.$;
+            answers = Object.assign(_answers, answers);
+            var $ = answers.site.$;
             return $.html($(selector).first())
               ? true
               : `$('${selector}') didn't return any elements, try again.`;
@@ -234,15 +234,16 @@ function add() {
         }
       ])
       .then(answers => {
+        answers = Object.assign(_answers, answers);
         var entry = {
           name: answers.name,
-          url: site.url || answers.site.url
+          url: answers.site.url
         };
         if (answers.selector) entry.selector = answers.selector;
 
         addEntry(argv.input, entry, err => {
           if (err) exit(err);
-          console.log(`Added ${url} to ${argv.input}`);
+          console.log(`Added ${entry.url} to ${argv.input}`);
           exit();
         });
       })

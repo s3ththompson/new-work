@@ -1,13 +1,17 @@
 {
   "name": "new-work",
   "version": "1.0.0",
-  "description": "",
+  "description": "Discover when artists post new work.",
   "main": "index.js",
-  "scripts": {
-    "fmt": "prettier --single-quote --write \"{,!(node_modules)/**/}*.js\"",
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "bin": {
+    "newwork": "bin/newwork.js"
   },
-  "author": "",
+  "repository": "s3ththompson/new-work",
+  "scripts": {
+    "deps": "dependency-check . && dependency-check . --extra --no-dev",
+    "fmt": "prettier --single-quote --write \"{,!(node_modules)/**/}*.js\"",
+    "test": "npm run fmt && npm run deps"
+  },
   "license": "MIT",
   "dependencies": {
     "async": "^2.4.1",
@@ -22,11 +26,11 @@
     "minimist": "^1.2.0",
     "normalize-url": "^1.9.1",
     "opn": "^5.0.0",
-    "prompt": "^1.0.0",
     "request": "^2.81.0",
     "text-table": "^0.2.0"
   },
   "devDependencies": {
+    "dependency-check": "^2.8.0",
     "prettier": "^1.3.1"
   }
 }
