@@ -1,9 +1,9 @@
 body {
-  font-size: 32px;
+  font-size: 16px;
   font-family: "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
   color: #212121;
   overflow-x: hidden;
-  line-height: 1.3em;
+  line-height: 1.4em;
   letter-spacing: .05em;
   padding: 2%;
   width: 96%;
@@ -16,7 +16,23 @@ li {
 a {
   color: #212121;
   text-decoration: none;
-  border-bottom: 0.08em solid rgba(0,0,0,.4);
+  display: inline-block;
+  position: relative;
+}
+
+a:hover {
+  color: #888;
+}
+
+a::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    display: inline-block;
+    height: 1em;
+    width: 100%;
+    border-bottom: 0.08em solid #bbb;
+    margin-top: 0.3em;
 }
 
 .new {
@@ -29,11 +45,11 @@ a {
   margin-left: 0.3em;
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  animation: stolen alternate 1s infinite;
+  animation: flash alternate 1s infinite;
 }
 
 
-@keyframes stolen {
+@keyframes flash {
   25% {
     color: #4fded8;
     border-color: #4fded8;

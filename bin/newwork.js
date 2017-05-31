@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const argv = require('minimist')(process.argv.slice(2));
+const async = require('async');
 const fs = require('fs');
 const yaml = require('../lib/yaml');
 const _ = require('lodash');
@@ -15,6 +16,7 @@ const path = require('path');
 const createHTML = require('create-html');
 const http = require('http');
 const opn = require('opn');
+const userHome = require('user-home');
 
 const helpText = `Usage: newwork <command> [options]
 
@@ -35,9 +37,9 @@ const helpText = `Usage: newwork <command> [options]
 
 var h = argv.h || argv.help;
 
-argv.input = argv.input || './sites.yaml';
-argv.output = argv.output || './sites.html';
-argv.lockfile = argv.lockfile || './sites.lock';
+argv.input = argv.input || path.join(userHome, '.newwork.yaml');
+argv.lockfile = argv.lockfile || path.join(userHome, '.newwork.lock');
+argv.output = argv.output || './newwork.html';
 argv.port = argv.port || 3030;
 
 if (h) {
@@ -45,32 +47,63 @@ if (h) {
   exit();
 }
 
-var cmd = argv._.shift();
+init(err => {
+  if (err) exit(err);
+  main();
+});
 
-switch (cmd) {
-  case 'list':
-    list();
-    break;
-  case 'remove':
-    remove();
-    break;
-  case 'add':
-    add();
-    break;
-  case 'build':
-    build();
-    break;
-  case 'serve':
-  case undefined:
-    serve();
-    break;
-  default:
-    exit(`command ${cmd} not found`);
+function main() {
+  var cmd = argv._.shift();
+
+  switch (cmd) {
+    case 'list':
+      list();
+      break;
+    case 'remove':
+      remove();
+      break;
+    case 'add':
+      add();
+      break;
+    case 'build':
+      build();
+      break;
+    case 'serve':
+    case undefined:
+      serve();
+      break;
+    default:
+      exit(`command ${cmd} not found`);
+  }
 }
 
 function help() {
   console.log(helpText);
   exit();
+}
+
+function init(cb) {
+  async.parallel(
+    [
+      cb => {
+        fs.readFile(argv.input, 'utf8', (err, data) => {
+          if (err && err.code == 'ENOENT') {
+            return yaml.write(argv.input, { sites: [] }, cb);
+          }
+          cb(err);
+        });
+      },
+      cb => {
+        fs.readFile(argv.lockfile, 'utf8', (err, data) => {
+          if (err && err.code == 'ENOENT') {
+            return yaml.writeLockfile(argv.lockfile, { sites: [] }, cb);
+          }
+          cb(err);
+        });
+      }
+    ],
+    cb
+  );
 }
 
 function exit(err) {
