@@ -17,6 +17,7 @@ const createHTML = require('create-html');
 const http = require('http');
 const opn = require('opn');
 const userHome = require('user-home');
+const chalk = require('chalk');
 
 const helpText = `Usage: newwork <command> [options]
 
@@ -108,7 +109,7 @@ function init(cb) {
 
 function exit(err) {
   if (err) {
-    console.log(err.toString());
+    console.log(chalk.red(err.toString()));
     process.exit(1);
   }
   process.exit(0);
@@ -141,10 +142,12 @@ function remove() {
     if (err) exit(err);
     removeEntry(argv.input, url, err => {
       if (err) exit(err);
-      console.log(`Removed ${url} from ${argv.input}`);
+      console.log(`Removed ${chalk.bold(url)} from ${chalk.bold(argv.input)}`);
       removeEntry(argv.lockfile, url, err => {
         if (err && err.message !== `site ${url} not found`) exit(err);
-        console.log(`Removed ${url} from ${argv.lockfile}`);
+        console.log(
+          `Removed ${chalk.bold(url)} from ${chalk.bold(argv.lockfile)}`
+        );
         exit();
       });
     });
@@ -315,7 +318,9 @@ function build() {
     if (err) exit(err);
     fs.writeFile(argv.output, html, function(err) {
       if (err) exit(err);
-      console.log(`Wrote New Work page to ${argv.output}`);
+      console.log(
+        `Wrote ${chalk.green('new-work')} page to ${chalk.bold(argv.output)}`
+      );
       exit();
     });
   });
@@ -329,7 +334,9 @@ function serve() {
         resp.end(html);
       })
       .listen(argv.port, err => {
-        console.log(`Serving New Work page on localhost:${argv.port}`);
+        console.log(
+          `Serving ${chalk.green('new-work')} page on ${chalk.bold('localhost:' + argv.port)}`
+        );
         opn(`http://localhost:${argv.port}`);
       });
   });

@@ -16,6 +16,7 @@
   "dependencies": {
     "async": "^2.4.1",
     "bel": "^5.0.0",
+    "chalk": "^1.1.3",
     "cheerio": "^0.22.0",
     "compare-urls": "^1.0.0",
     "create-html": "^3.0.0",
