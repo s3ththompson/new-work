@@ -14,30 +14,23 @@ module.exports = {
 };
 
 function crawl(sites, cb) {
-  async.mapLimit(
-    sites,
-    10,
-    (site, cb) => {
-      fetch(site.url, (err, lastModified, $) => {
-        if (err) return cb(err, null);
-        if (site.selector) {
-          site.content = $.html($(site.selector).first());
-          cb(null, site);
-        } else if (lastModified) {
-          site.lastModified = new Date(lastModified);
-          cb(null, site);
-        } else {
-          cb(
-            new Error(
-              `${site.url}: no 'last-modified' header, specify selector instead`
-            ),
-            null
-          );
-        }
-      });
-    },
-    cb
-  );
+  async.mapLimit(sites, 10, scrape, cb);
+
+  function scrape(site, cb) {
+    fetch(site.url, (err, lastModified, $) => {
+      if (err) return cb(err, null);
+      if (site.selector) {
+        site.content = $.html($(site.selector).first());
+        cb(null, site);
+      } else if (lastModified) {
+        site.lastModified = new Date(lastModified);
+        cb(null, site);
+      } else {
+        var msg = `${site.url}: no 'last-modified' header, specify selector`;
+        cb(new Error(msg), null);
+      }
+    });
+  }
 }
 
 function diff(lock, sites, expiration) {
@@ -73,12 +66,10 @@ function status(sites, lockfile, opts, cb) {
           var expirationDate = subMilliseconds(new Date(), expiration);
           site.new = isNewer(site.lastModified, expirationDate) == 1;
         }
-        cb(
-          null,
-          sites.map(site => {
-            return _.pick(site, ['name', 'url', 'new', 'lastModified']);
-          })
-        );
+        var cleanSites = sites.map(site => {
+          return _.pick(site, ['name', 'url', 'new', 'lastModified']);
+        });
+        cb(null, cleanSites);
       });
     });
   });

@@ -10,7 +10,7 @@ const normalizeUrl = require('normalize-url');
 const table = require('text-table');
 const inquirer = require('inquirer');
 const fetch = require('../lib/fetch');
-const distanceInWordsToNow = require('date-fns/distance_in_words_to_now');
+const relativeDate = require('date-fns/distance_in_words_to_now');
 const newwork = require('..');
 const path = require('path');
 const createHTML = require('create-html');
@@ -19,6 +19,8 @@ const opn = require('opn');
 const ora = require('ora');
 const userHome = require('user-home');
 const chalk = require('chalk');
+
+process.title = 'newwork';
 
 const helpText = `Usage: newwork <command> [options]
 
@@ -85,27 +87,25 @@ function help() {
 }
 
 function init(cb) {
-  async.parallel(
-    [
-      cb => {
-        fs.readFile(argv.input, 'utf8', (err, data) => {
-          if (err && err.code == 'ENOENT') {
-            return yaml.write(argv.input, { sites: [] }, cb);
-          }
-          cb(err);
-        });
-      },
-      cb => {
-        fs.readFile(argv.lockfile, 'utf8', (err, data) => {
-          if (err && err.code == 'ENOENT') {
-            return yaml.writeLockfile(argv.lockfile, { sites: [] }, cb);
-          }
-          cb(err);
-        });
+  async.parallel([initInput, initLockfile], cb);
+
+  function initInput(cb) {
+    fs.readFile(argv.input, 'utf8', (err, data) => {
+      if (err && err.code == 'ENOENT') {
+        return yaml.write(argv.input, { sites: [] }, cb);
       }
-    ],
-    cb
-  );
+      cb(err);
+    });
+  }
+
+  function initLockfile(cb) {
+    fs.readFile(argv.lockfile, 'utf8', (err, data) => {
+      if (err && err.code == 'ENOENT') {
+        return yaml.writeLockfile(argv.lockfile, { sites: [] }, cb);
+      }
+      cb(err);
+    });
+  }
 }
 
 function exit(err) {
@@ -208,68 +208,71 @@ function add() {
         $
       }
     };
+
+    var urlQ = {
+      type: 'input',
+      name: 'site',
+      message: 'URL',
+      filter: function(url) {
+        var cb = this.async();
+        validate(url, (err, lastModifiedDate, $) => {
+          if (err) return cb(err);
+          var site = {
+            url: url,
+            lastModifiedDate: lastModifiedDate,
+            $: $
+          };
+          site.toString = () => {
+            return url;
+          };
+          cb(null, site);
+        });
+      },
+      when: function() {
+        return !addedURL;
+      }
+    };
+    var nameQ = {
+      type: 'input',
+      name: 'name',
+      message: 'Name',
+      default: answers => {
+        answers = Object.assign(_answers, answers);
+        var $ = answers.site.$;
+        return $('title').text();
+      }
+    };
+    var lastModifiedQ = {
+      type: 'confirm',
+      name: 'lastModified',
+      message: answers => {
+        answers = Object.assign(_answers, answers);
+        var relative = relativeDate(answers.site.lastModifiedDate);
+        return `Was the site last modified ${relative} ago?`;
+      },
+      when: answers => {
+        answers = Object.assign(_answers, answers);
+        return answers.site.lastModifiedDate;
+      }
+    };
+    var selectorQ = {
+      type: 'input',
+      name: 'selector',
+      message: `Choose an element selector to diff for changes`,
+      when: answers => {
+        return !answers.lastModified;
+      },
+      validate: (selector, answers) => {
+        answers = Object.assign(_answers, answers);
+        var $ = answers.site.$;
+        return $.html($(selector).first())
+          ? true
+          : `$('${selector}') didn't return any elements, try again.`;
+      }
+    };
+
     inquirer
-      .prompt([
-        {
-          type: 'input',
-          name: 'site',
-          message: 'URL',
-          filter: function(url) {
-            var cb = this.async();
-            validate(url, (err, lastModifiedDate, $) => {
-              if (err) return cb(err);
-              cb(null, {
-                url: url,
-                lastModifiedDate: lastModifiedDate,
-                $: $,
-                toString: () => {
-                  return url;
-                }
-              });
-            });
-          },
-          when: function() {
-            return !addedURL;
-          }
-        },
-        {
-          type: 'input',
-          name: 'name',
-          message: 'Name',
-          default: answers => {
-            answers = Object.assign(_answers, answers);
-            var $ = answers.site.$;
-            return $('title').text();
-          }
-        },
-        {
-          type: 'confirm',
-          name: 'lastModified',
-          message: answers => {
-            answers = Object.assign(_answers, answers);
-            return `Was the site last modified ${distanceInWordsToNow(answers.site.lastModifiedDate)} ago?`;
-          },
-          when: answers => {
-            answers = Object.assign(_answers, answers);
-            return answers.site.lastModifiedDate;
-          }
-        },
-        {
-          type: 'input',
-          name: 'selector',
-          message: `Choose an element selector to diff for changes`,
-          when: answers => {
-            return !answers.lastModified;
-          },
-          validate: (selector, answers) => {
-            answers = Object.assign(_answers, answers);
-            var $ = answers.site.$;
-            return $.html($(selector).first())
-              ? true
-              : `$('${selector}') didn't return any elements, try again.`;
-          }
-        }
-      ])
+      .prompt([urlQ, nameQ, lastModifiedQ, selectorQ])
       .then(answers => {
         answers = Object.assign(_answers, answers);
         var entry = {
@@ -280,7 +283,9 @@ function add() {
 
         addEntry(argv.input, entry, err => {
           if (err) exit(err);
-          console.log(`Added ${chalk.bold(entry.url)} to ${chalk.bold(argv.input)}`);
+          console.log(
+            `Added ${chalk.bold(entry.url)} to ${chalk.bold(argv.input)}`
+          );
           exit();
         });
       })
@@ -358,24 +363,21 @@ function renderHTML(input, lockfile, cb) {
       }
       spinner.succeed();
 
-      fs.readFile(
-        path.join(__dirname, '../views/default.css'),
-        'utf8',
-        (err, css) => {
-          if (err) return cb(err, null);
-          var cssTag = `<style type="text/css">
+      var cssFile = path.join(__dirname, '../views/default.css');
+      fs.readFile(cssFile, 'utf8', (err, css) => {
+        if (err) return cb(err, null);
+        var cssTag = `<style type="text/css">
             ${css}
           </style>
           `;
-          var html = createHTML({
-            title: 'New Work',
-            body: body,
-            head: cssTag,
-            lang: 'en'
-          });
-          cb(null, html);
-        }
-      );
+        var html = createHTML({
+          title: 'New Work',
+          body: body,
+          head: cssTag,
+          lang: 'en'
+        });
+        cb(null, html);
+      });
     });
   });
 }
