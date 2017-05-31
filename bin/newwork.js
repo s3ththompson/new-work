@@ -280,7 +280,7 @@ function add() {
 
         addEntry(argv.input, entry, err => {
           if (err) exit(err);
-          console.log(`Added ${entry.url} to ${argv.input}`);
+          console.log(`Added ${chalk.bold(entry.url)} to ${chalk.bold(argv.input)}`);
           exit();
         });
       })
@@ -348,7 +348,7 @@ function renderHTML(input, lockfile, cb) {
     if (err) return cb(err, null);
     var sites = input.sites;
 
-    const spinner = ora('Checking for new work...');
+    const spinner = ora('Checking for site updates...');
     spinner.color = 'black';
     spinner.start();
     newwork.render(sites, lockfile, (err, body) => {
