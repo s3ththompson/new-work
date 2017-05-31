@@ -27,6 +27,7 @@
     "minimist": "^1.2.0",
     "normalize-url": "^1.9.1",
     "opn": "^5.0.0",
+    "ora": "^1.2.0",
     "request": "^2.81.0",
     "text-table": "^0.2.0",
     "user-home": "^2.0.0"

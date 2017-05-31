@@ -16,6 +16,7 @@ const path = require('path');
 const createHTML = require('create-html');
 const http = require('http');
 const opn = require('opn');
+const ora = require('ora');
 const userHome = require('user-home');
 const chalk = require('chalk');
 
@@ -347,8 +348,15 @@ function renderHTML(input, lockfile, cb) {
     if (err) return cb(err, null);
     var sites = input.sites;
 
+    const spinner = ora('Checking for new work...');
+    spinner.color = 'black';
+    spinner.start();
     newwork.render(sites, lockfile, (err, body) => {
-      if (err) return cb(err, null);
+      if (err) {
+        spinner.fail();
+        return cb(err, null);
+      }
+      spinner.succeed();
 
       fs.readFile(
         path.join(__dirname, '../views/default.css'),
