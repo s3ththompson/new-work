@@ -30,9 +30,10 @@ const helpText = `Usage: newwork <command> [options]
     <default>                   Run 'newwork serve'
     serve                       Scrape, update, and serve a new-work page
     build                       Scrape, update, and save a new-work page to disk
+    print                       Scrape, update, and print a table to the terminal 
     add [url]                   Add an URL to your list of sites
     remove [url]                Remove an URL from your list of sites
-    list                        List all sites in your new-work page
+    ls                          List all sites in your new-work page
 
   Available options:
     -i, --input <filename>      Input YAML file [default: sites.yaml]
@@ -62,7 +63,7 @@ function main() {
   var cmd = argv._.shift();
 
   switch (cmd) {
-    case 'list':
+    case 'ls':
       list();
       break;
     case 'remove':
@@ -70,6 +71,9 @@ function main() {
       break;
     case 'add':
       add();
+      break;
+    case 'print':
+      print();
       break;
     case 'build':
       build();
@@ -86,6 +90,15 @@ function main() {
 function help() {
   console.log(helpText);
   exit();
+}
+
+function exit(err) {
+  if (err) {
+    var msg = chalk.red(`✖ ${err.message}`);
+    console.log(msg);
+    process.exit(1);
+  }
+  process.exit(0);
 }
 
 function init(cb) {
@@ -110,14 +123,6 @@ function init(cb) {
   }
 }
 
-function exit(err) {
-  if (err) {
-    console.log(chalk.red(err.toString()));
-    process.exit(1);
-  }
-  process.exit(0);
-}
-
 function list() {
   ls(argv.input, (err, sites) => {
     if (err) exit(err);
@@ -128,7 +133,8 @@ function list() {
   function ls(input, cb) {
     yaml.read(input, (err, data) => {
       if (err) return cb(err, null);
-      cb(null, _.map(data.sites, o => [o.name, o.url]));
+      var sites = data.sites;
+      cb(null, _.map(sites, site => [chalk.bold(site.name), site.url]));
     });
   }
 }
@@ -157,14 +163,13 @@ function remove() {
   });
 
   function prompt(cb) {
+    var urlQ = {
+      type: 'input',
+      name: 'url',
+      message: 'URL'
+    };
     inquirer
-      .prompt([
-        {
-          type: 'input',
-          name: 'url',
-          message: 'URL'
-        }
-      ])
+      .prompt([urlQ])
       .then(answers => {
         cb(null, answers.url);
       })
@@ -181,7 +186,7 @@ function remove() {
           return compareUrls(site.url, url);
         })
       ) {
-        return cb(new Error(`site ${url} not found`));
+        return cb(new Error(`site ${chalk.bold(url)} not found`));
       }
       data.sites = _.reject(data.sites, site => {
         return compareUrls(site.url, url);
@@ -206,8 +211,7 @@ function add() {
       site: {
         url: addedURL,
         lastModifiedDate: lastModifiedDate,
-        $,
-        $
+        $: $
       }
     };
 
@@ -304,7 +308,11 @@ function add() {
           return compareUrls(site.url, opts.url);
         })
       )
-        return cb(new Error(`Site ${opts.url} already in ${argv.input}`));
+        return cb(
+          new Error(
+            `Site ${chalk.bold(opts.url)} already in ${chalk.bold(argv.input)}`
+          )
+        );
       data.sites.push(opts);
       data.sites = _.sortBy(data.sites, 'name');
       yaml.write(input, data, cb);
@@ -319,6 +327,32 @@ function add() {
     });
     fetch(url, cb);
   }
+}
+
+function print() {
+  yaml.read(argv.input, (err, input) => {
+    if (err) return cb(err, null);
+    var sites = input.sites;
+
+    const spinner = ora('Checking for site updates...');
+    spinner.color = 'black';
+    spinner.start();
+    newwork.status(sites, argv.lockfile, (err, sites) => {
+      if (err) {
+        spinner.fail();
+        return cb(err, null);
+      }
+      spinner.stop();
+      sites = _.map(sites, site => {
+        var name = site.new
+          ? chalk.green.bold(site.name)
+          : chalk.black.bold(site.name);
+        return [name, site.url];
+      });
+      console.log(table(sites));
+      exit();
+    });
+  });
 }
 
 function build() {
