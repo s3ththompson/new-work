@@ -1,12 +1,12 @@
-const yaml = require('./lib/yaml');
-const async = require('async');
 const _ = require('lodash');
+const async = require('async');
+const isNewer = require('date-fns/compare_asc');
 const normalizeUrl = require('normalize-url');
-var subMilliseconds = require('date-fns/sub_milliseconds');
-var isNewer = require('date-fns/compare_asc');
+const subMilliseconds = require('date-fns/sub_milliseconds');
 
-const view = require('./views/default');
 const fetch = require('./lib/fetch');
+const view = require('./views/default');
+const yaml = require('./lib/yaml');
 
 module.exports = {
   status: status,

@@ -1,24 +1,26 @@
 #!/usr/bin/env node
 
+const fs = require('fs');
+const http = require('http');
+const path = require('path');
+
+const _ = require('lodash');
 const argv = require('minimist')(process.argv.slice(2));
 const async = require('async');
-const fs = require('fs');
-const yaml = require('../lib/yaml');
-const _ = require('lodash');
+const chalk = require('chalk');
 const compareUrls = require('compare-urls');
-const normalizeUrl = require('normalize-url');
-const table = require('text-table');
-const inquirer = require('inquirer');
-const fetch = require('../lib/fetch');
-const relativeDate = require('date-fns/distance_in_words_to_now');
-const newwork = require('..');
-const path = require('path');
 const createHTML = require('create-html');
-const http = require('http');
+const inquirer = require('inquirer');
+const normalizeUrl = require('normalize-url');
 const opn = require('opn');
 const ora = require('ora');
+const relativeDate = require('date-fns/distance_in_words_to_now');
+const table = require('text-table');
 const userHome = require('user-home');
-const chalk = require('chalk');
+
+const fetch = require('../lib/fetch');
+const yaml = require('../lib/yaml');
+const newwork = require('..');
 
 process.title = 'newwork';
 
