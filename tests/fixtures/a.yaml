@@ -1,0 +1,8 @@
+sites:
+  - name: Old Example
+    url: 'http://oldexample.com/'
+    lastModified: 2017-05-03T00:58:59.324Z
+  - name: New Example
+    url: 'http://newexample.com/'
+    selector: '#posts .post a'
+    content: <a href="#link2">Link 2</a>

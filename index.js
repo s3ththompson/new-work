@@ -53,26 +53,34 @@ function status(sites, lockfile, opts, cb) {
 
   var month = 1000 * 60 * 60 * 24 * 30; // ms in one month
   var expiration = opts.expiration || month;
+  var crawlFunc = opts.crawl || crawl;
+  var writeFunc = opts.write || yaml.writeLockfile;
+  var readFunc = opts.read || yaml.read;
 
-  yaml.read(lockfile, (err, lock) => {
+  readFunc(lockfile, (err, data) => {
     if (err) return cb(err, null);
-    lock = lock.sites;
-    crawl(sites, (err, sites) => {
+    lock = data.sites;
+    crawlFunc(sites, (err, sites) => {
       if (err) return cb(err, null);
       sites = diff(lock, sites, expiration);
-      yaml.writeLockfile(lockfile, { sites: sites }, err => {
+      writeFunc(lockfile, { sites: sites }, err => {
         if (err) return cb(err, null);
-        for (var site of sites) {
-          var expirationDate = subMilliseconds(new Date(), expiration);
-          site.new = isNewer(site.lastModified, expirationDate) == 1;
-        }
-        var cleanSites = sites.map(site => {
-          return _.pick(site, ['name', 'url', 'new', 'lastModified']);
-        });
-        cb(null, cleanSites);
+        sites = markNew(sites, expiration);
+        cb(null, sites);
       });
     });
   });
+
+  function markNew(sites, expiration) {
+    for (var site of sites) {
+      var expirationDate = subMilliseconds(new Date(), expiration);
+      site.new = isNewer(site.lastModified, expirationDate) == 1;
+    }
+    var cleanSites = sites.map(site => {
+      return _.pick(site, ['name', 'url', 'new', 'lastModified']);
+    });
+    return cleanSites;
+  }
 }
 
 function render(sites, lockfile, opts, cb) {
@@ -83,6 +91,7 @@ function render(sites, lockfile, opts, cb) {
 
   status(sites, lockfile, opts, (err, sites) => {
     if (err) return cb(err, null);
-    cb(null, template(sites).toString());
+    var str = template(sites).toString();
+    cb(null, str);
   });
 }
