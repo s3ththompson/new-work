@@ -77,7 +77,7 @@ function status(sites, lockfile, opts, cb) {
       site.new = isNewer(site.lastModified, expirationDate) == 1;
     }
     var cleanSites = sites.map(site => {
-      return _.pick(site, ['name', 'url', 'new', 'lastModified']);
+      return _.pick(site, ['name', 'url', 'new', 'category', 'lastModified']);
     });
     return cleanSites;
   }

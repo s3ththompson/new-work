@@ -48,6 +48,14 @@ a::after {
   animation: flash alternate 1s infinite;
 }
 
+td, th {
+    padding-right: 2em;
+}
+
+th {
+    text-align: left;
+}
+
 
 @keyframes flash {
   25% {
