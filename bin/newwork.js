@@ -94,9 +94,8 @@ function help() {
 
 function exit(err) {
   if (err) {
-    // var msg = chalk.red(`✖ ${err.message}`);
-    // console.log(msg);
-    console.log(err)
+    var msg = chalk.red(`✖ ${err.message}`);
+    console.log(msg);
     process.exit(1);
   }
   process.exit(0);
@@ -130,8 +129,15 @@ function list() {
     var sites = data.sites;
     categorized = _.groupBy(sites, 'category');
     for (var category in categorized) {
-      console.log(category)
-      console.log(table(_.map(categorized[category], site => [chalk.bold(site.name), site.url])))
+      console.log(category);
+      console.log(
+        table(
+          _.map(categorized[category], site => [
+            chalk.bold(site.name),
+            site.url
+          ])
+        )
+      );
     }
     exit();
   });
@@ -255,7 +261,7 @@ function add() {
         message: 'Category',
         choices: categories,
         when: () => {
-          return (categories.length > 1)
+          return categories.length > 1;
         }
       };
       var otherCategoryQ = {
@@ -263,10 +269,10 @@ function add() {
         name: 'category',
         message: 'New category name',
         when: answers => {
-          return (!answers.category || answers.category == '(New)')
+          return !answers.category || answers.category == '(New)';
         },
         validate: category => {
-          return (category) ? true : 'Please enter a category';
+          return category ? true : 'Please enter a category';
         }
       };
       var lastModifiedQ = {
@@ -299,7 +305,14 @@ function add() {
       };
 
       inquirer
-        .prompt([urlQ, nameQ, categoryQ, otherCategoryQ, lastModifiedQ, selectorQ])
+        .prompt([
+          urlQ,
+          nameQ,
+          categoryQ,
+          otherCategoryQ,
+          lastModifiedQ,
+          selectorQ
+        ])
         .then(answers => {
           answers = Object.assign(_answers, answers);
           var entry = {
@@ -326,15 +339,24 @@ function add() {
   function getCategories(input, cb) {
     yaml.read(input, (err, data) => {
       if (err) return cb(err, null);
-      var categories = _.reduce(data.sites, (result, site) => {
-        if (site.category) result[site.category] = result[site.category] + 1 || 1;
-        return result
-      }, {});
-      categories = _.orderBy(Object.keys(categories), (key) => {
-        return categories[key]
-      }, "desc");
-      cb(null, _.compact(categories))
-    })
+      var categories = _.reduce(
+        data.sites,
+        (result, site) => {
+          if (site.category)
+            result[site.category] = result[site.category] + 1 || 1;
+          return result;
+        },
+        {}
+      );
+      categories = _.orderBy(
+        Object.keys(categories),
+        key => {
+          return categories[key];
+        },
+        'desc'
+      );
+      cb(null, _.compact(categories));
+    });
   }
 
   function addEntry(input, opts, cb) {
@@ -414,7 +436,9 @@ function serve() {
       })
       .listen(argv.port, err => {
         console.log(
-          `Serving ${chalk.green('new-work')} page on ${chalk.bold('localhost:' + argv.port)}`
+          `Serving ${chalk.green('new-work')} page on ${chalk.bold(
+            'localhost:' + argv.port
+          )}`
         );
         opn(`http://localhost:${argv.port}`);
       });
