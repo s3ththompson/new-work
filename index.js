@@ -42,9 +42,8 @@ function diff(lock, sites, expiration) {
   for (var site of sites) {
     var baseline = _.find(lock, ['url', site.url]);
     if (site.selector && baseline && baseline.selector) {
-      site.lastModified = site.content !== baseline.content
-        ? new Date()
-        : baseline.lastModified;
+      site.lastModified =
+        site.content !== baseline.content ? new Date() : baseline.lastModified;
     } else if (!site.lastModified) {
       site.lastModified = subMilliseconds(new Date(), expiration);
     }
