@@ -20,11 +20,16 @@ function crawl(sites, cb) {
     fetch(site.url, (err, lastModified, $) => {
       if (err) return cb(err, null);
       if (site.selector) {
-        site.content = $.html($(site.selector).first());
-        cb(null, site);
+        var content = $.html($(site.selector).first());
+        if (!content) {
+          var msg = `${site.url}: selector '${site.selector}' returned nothing`;
+          return cb(new Error(msg), null);
+        }
+        site.content = content;
+        return cb(null, site);
       } else if (lastModified) {
         site.lastModified = new Date(lastModified);
-        cb(null, site);
+        return cb(null, site);
       } else {
         var msg = `${site.url}: no 'last-modified' header, specify selector`;
         cb(new Error(msg), null);
