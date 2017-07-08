@@ -94,8 +94,9 @@ function help() {
 
 function exit(err) {
   if (err) {
-    var msg = chalk.red(`✖ ${err.message}`);
-    console.log(msg);
+    // var msg = chalk.red(`✖ ${err.message}`);
+    // console.log(msg);
+    console.log(err)
     process.exit(1);
   }
   process.exit(0);
@@ -124,19 +125,16 @@ function init(cb) {
 }
 
 function list() {
-  ls(argv.input, (err, sites) => {
+  yaml.read(argv.input, (err, data) => {
     if (err) exit(err);
-    console.log(table(sites));
+    var sites = data.sites;
+    categorized = _.groupBy(sites, 'category');
+    for (var category in categorized) {
+      console.log(category)
+      console.log(table(_.map(categorized[category], site => [chalk.bold(site.name), site.url])))
+    }
     exit();
   });
-
-  function ls(input, cb) {
-    yaml.read(input, (err, data) => {
-      if (err) return cb(err, null);
-      var sites = data.sites;
-      cb(null, _.map(sites, site => [chalk.bold(site.name), site.url]));
-    });
-  }
 }
 
 function remove() {
@@ -207,98 +205,137 @@ function add() {
 
   prefetch(addedURL, (err, lastModifiedDate, $) => {
     if (err) exit(err);
-    var _answers = {
-      site: {
-        url: addedURL,
-        lastModifiedDate: lastModifiedDate,
-        $: $
-      }
-    };
+    getCategories(argv.input, (err, categories) => {
+      if (err) exit(err);
+      var _answers = {
+        site: {
+          url: addedURL,
+          lastModifiedDate: lastModifiedDate,
+          $: $
+        }
+      };
 
-    var urlQ = {
-      type: 'input',
-      name: 'site',
-      message: 'URL',
-      filter: function(url) {
-        var cb = this.async();
-        validate(url, (err, lastModifiedDate, $) => {
-          if (err) return cb(err);
-          var site = {
-            url: url,
-            lastModifiedDate: lastModifiedDate,
-            $: $
+      var urlQ = {
+        type: 'input',
+        name: 'site',
+        message: 'URL',
+        filter: function(url) {
+          var cb = this.async();
+          validate(url, (err, lastModifiedDate, $) => {
+            if (err) return cb(err);
+            var site = {
+              url: url,
+              lastModifiedDate: lastModifiedDate,
+              $: $
+            };
+            site.toString = () => {
+              return url;
+            };
+            cb(null, site);
+          });
+        },
+        when: function() {
+          return !addedURL;
+        }
+      };
+      var nameQ = {
+        type: 'input',
+        name: 'name',
+        message: 'Name',
+        default: answers => {
+          answers = Object.assign(_answers, answers);
+          var $ = answers.site.$;
+          return $('title').text();
+        }
+      };
+      categories.push('(New)');
+      var categoryQ = {
+        type: 'list',
+        name: 'category',
+        message: 'Category',
+        choices: categories,
+        when: () => {
+          return (categories.length > 1)
+        }
+      };
+      var otherCategoryQ = {
+        type: 'input',
+        name: 'category',
+        message: 'New category name',
+        when: answers => {
+          return (!answers.category || answers.category == '(New)')
+        },
+        validate: category => {
+          return (category) ? true : 'Please enter a category';
+        }
+      };
+      var lastModifiedQ = {
+        type: 'confirm',
+        name: 'lastModified',
+        message: answers => {
+          answers = Object.assign(_answers, answers);
+          var relative = relativeDate(answers.site.lastModifiedDate);
+          return `Was the site last modified ${relative} ago?`;
+        },
+        when: answers => {
+          answers = Object.assign(_answers, answers);
+          return answers.site.lastModifiedDate;
+        }
+      };
+      var selectorQ = {
+        type: 'input',
+        name: 'selector',
+        message: `Choose an element selector to diff for changes`,
+        when: answers => {
+          return !answers.lastModified;
+        },
+        validate: (selector, answers) => {
+          answers = Object.assign(_answers, answers);
+          var $ = answers.site.$;
+          return $.html($(selector).first())
+            ? true
+            : `$('${selector}') didn't return any elements, try again.`;
+        }
+      };
+
+      inquirer
+        .prompt([urlQ, nameQ, categoryQ, otherCategoryQ, lastModifiedQ, selectorQ])
+        .then(answers => {
+          answers = Object.assign(_answers, answers);
+          var entry = {
+            name: answers.name,
+            url: answers.site.url,
+            category: answers.category
           };
-          site.toString = () => {
-            return url;
-          };
-          cb(null, site);
-        });
-      },
-      when: function() {
-        return !addedURL;
-      }
-    };
-    var nameQ = {
-      type: 'input',
-      name: 'name',
-      message: 'Name',
-      default: answers => {
-        answers = Object.assign(_answers, answers);
-        var $ = answers.site.$;
-        return $('title').text();
-      }
-    };
-    var lastModifiedQ = {
-      type: 'confirm',
-      name: 'lastModified',
-      message: answers => {
-        answers = Object.assign(_answers, answers);
-        var relative = relativeDate(answers.site.lastModifiedDate);
-        return `Was the site last modified ${relative} ago?`;
-      },
-      when: answers => {
-        answers = Object.assign(_answers, answers);
-        return answers.site.lastModifiedDate;
-      }
-    };
-    var selectorQ = {
-      type: 'input',
-      name: 'selector',
-      message: `Choose an element selector to diff for changes`,
-      when: answers => {
-        return !answers.lastModified;
-      },
-      validate: (selector, answers) => {
-        answers = Object.assign(_answers, answers);
-        var $ = answers.site.$;
-        return $.html($(selector).first())
-          ? true
-          : `$('${selector}') didn't return any elements, try again.`;
-      }
-    };
+          if (answers.selector) entry.selector = answers.selector;
 
-    inquirer
-      .prompt([urlQ, nameQ, lastModifiedQ, selectorQ])
-      .then(answers => {
-        answers = Object.assign(_answers, answers);
-        var entry = {
-          name: answers.name,
-          url: answers.site.url
-        };
-        if (answers.selector) entry.selector = answers.selector;
-
-        addEntry(argv.input, entry, err => {
-          if (err) exit(err);
-          console.log(
-            `Added ${chalk.bold(entry.url)} to ${chalk.bold(argv.input)}`
-          );
-          exit();
+          addEntry(argv.input, entry, err => {
+            if (err) exit(err);
+            console.log(
+              `Added ${chalk.bold(entry.url)} to ${chalk.bold(argv.input)}`
+            );
+            exit();
+          });
+        })
+        .catch(err => {
+          exit(err);
         });
-      })
-      .catch(err => {
-        exit(err);
-      });
+    });
   });
+
+  function getCategories(input, cb) {
+    yaml.read(input, (err, data) => {
+      if (err) return cb(err, null);
+      var categories = _.reduce(data.sites, (result, site) => {
+        if (site.category) result[site.category] = result[site.category] + 1 || 1;
+        return result
+      }, {});
+      categories = _.orderBy(Object.keys(categories), (key) => {
+        return categories[key]
+      }, "desc");
+      cb(null, _.compact(categories))
+    })
+  }
 
   function addEntry(input, opts, cb) {
     yaml.read(input, (err, data) => {
