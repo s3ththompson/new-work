@@ -48,7 +48,7 @@ function row(categories, i) {
 function link(site) {
   var newspan = site.new ? bel`<span class="new">New</span>` : '';
   return bel`<div>
-    <a href="${site.url}">${site.name}</a>
+    <a target="_blank" href="${site.url}">${site.name}</a>
     ${newspan}
   </div>`;
 }

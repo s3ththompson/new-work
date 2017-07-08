@@ -44,7 +44,7 @@ test('render', t => {
     };
     newwork.render(sites, lockfile, opts, (err, str) => {
       t.notOk(err);
-      t.ok(str.includes('<a href="http://oldexample.com/">Old Example</a>'));
+      t.ok(str.includes('href="http://oldexample.com/"'));
       t.end();
     });
   });
