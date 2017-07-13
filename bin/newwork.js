@@ -83,7 +83,7 @@ function main() {
       serve();
       break;
     default:
-      exit(`command ${cmd} not found`);
+      exit(new Error(`command ${cmd} not found`));
   }
 }
 
@@ -204,18 +204,18 @@ function add() {
   var addedURL = argv._.shift();
 
   prefetch = addedURL
-    ? validate
+    ? validateURL
     : (_, cb) => {
         cb(null);
       };
 
-  prefetch(addedURL, (err, lastModifiedDate, $) => {
+  prefetch(addedURL, (err, normalizedURL, lastModifiedDate, $) => {
     if (err) exit(err);
     getCategories(argv.input, (err, categories) => {
       if (err) exit(err);
       var _answers = {
         site: {
-          url: addedURL,
+          url: normalizedURL,
           lastModifiedDate: lastModifiedDate,
           $: $
         }
@@ -227,10 +227,10 @@ function add() {
         message: 'URL',
         filter: function(url) {
           var cb = this.async();
-          validate(url, (err, lastModifiedDate, $) => {
+          validateURL(url, (err, normalizedURL, lastModifiedDate, $) => {
             if (err) return cb(err);
             var site = {
-              url: url,
+              url: normalizedURL,
               lastModifiedDate: lastModifiedDate,
               $: $
             };
@@ -378,13 +378,15 @@ function add() {
     });
   }
 
-  function validate(url, cb) {
+  function validateURL(url, cb) {
     url = normalizeUrl(url, {
       stripFragment: false,
       stripWWW: false,
       removeTrailingSlash: false
     });
-    fetch(url, cb);
+    fetch(url, (err, lastModified, $) => {
+      cb(err, url, lastModified, $);
+    });
   }
 }
 
