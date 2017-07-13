@@ -2,6 +2,18 @@
 
 <h5 align="center">✨ Discover when artists post new work</h5>
 
+<div align="center">
+  <a href="https://npmjs.org/package/new-work">
+    <img src="https://img.shields.io/npm/v/new-work.svg?style=flat-square" alt="NPM Version" />
+  </a>
+  <a href="https://travis-ci.org/s3ththompson/new-work">
+    <img src="https://img.shields.io/travis/s3ththompson/new-work/master.svg?style=flat-square" alt="Build Status" />
+  </a>
+  <a href="https://nodejs.org/api/documentation.html#documentation_stability_index">
+    <img src="https://img.shields.io/badge/stability-experimental-orange.svg?style=flat-square" alt="Stability" />
+  </a>
+</div>
+
 ![screenshot](https://user-images.githubusercontent.com/970121/28145834-3ba6a1fc-672a-11e7-9323-205c6a48e68a.jpg)
 
 ## Features
