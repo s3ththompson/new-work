@@ -64,7 +64,7 @@ Usage: newwork <command> [options]
 
 1.  Open the site with a web inspector such as Chrome DevTools Elements panel. Search for an HTML element that will change when the site is updated. The could be a thumbnail on the homepage, a menu of projects, or a blog post element.
 
-  ![guide](https://user-images.githubusercontent.com/970121/28145836-3ed2cde2-672a-11e7-8e17-cd7c2b097aed.jpg)
+    ![guide](https://user-images.githubusercontent.com/970121/28145836-3ed2cde2-672a-11e7-8e17-cd7c2b097aed.jpg)
 
 1.  Specify a jQuery selector that will return the chosen element. For example, a link element inside a thumbnail with the class `thumb` may be referenced by the selector `.thumb a`. Only the first matched element will be used.
 
