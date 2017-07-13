@@ -109,6 +109,10 @@ Render an HTML view of a list of sites, highlighting when new work has been post
     -   `opts.expiration` **[Number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number)** duration in ms for which a given site is still "new", default ms in one month
 -   `cb`  
 
+## See Also
+
+- [Hardly Everything](https://hardlyeverything.com/) - [@jondashkyle](https://github.com/jondashkyle) 🙌
+
 ## License
 
 [MIT](https://tldrlegal.com/license/mit-license)
