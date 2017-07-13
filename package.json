@@ -8,6 +8,7 @@
   },
   "repository": "s3ththompson/new-work",
   "scripts": {
+    "build:docs": "documentation readme index.js -s 'JS API'",
     "deps": "dependency-check . && dependency-check . --extra --no-dev",
     "fmt": "prettier --single-quote --write \"{,!(node_modules)/**/}*.js\"",
     "test": "npm run fmt && npm run deps && tape tests/index.js | tap-spec"
@@ -34,7 +35,8 @@
   },
   "devDependencies": {
     "dependency-check": "^2.8.0",
-    "prettier": "^1.3.1",
+    "documentation": "^4.0.0-rc.1",
+    "prettier": "^1.5.2",
     "tap-spec": "^4.1.1",
     "tape": "^4.7.0"
   }

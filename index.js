@@ -14,7 +14,7 @@ module.exports = {
 };
 
 function crawl(sites, cb) {
-  async.mapLimit(sites, 10, scrape, cb);
+  async.mapLimit(sites, 100, scrape, cb);
 
   function scrape(site, cb) {
     fetch(site.url, (err, lastModified, $) => {
@@ -51,6 +51,18 @@ function diff(lock, sites, expiration) {
   return sites;
 }
 
+/**
+* Get the status of a list of sites to see whether new work has been posted.
+* @name status
+* @param {Object[]} sites
+* @param {String} sites.name - name of artist / title of site
+* @param {String} sites.url
+* @param {String} sites.category
+* @param {String} [sites.selector] - jQuery selector that will return an element to diff for changes
+* @param {String} lockfile - filename of lockfile to store previous diffs & metadata
+* @param {Object} [opts]
+* @param {Number} opts.expiration - duration in ms for which a given site is still "new", default ms in one month
+**/
 function status(sites, lockfile, opts, cb) {
   var cb = cb || opts;
   if (typeof opts === 'function' || !opts) opts = {};
@@ -87,6 +99,19 @@ function status(sites, lockfile, opts, cb) {
   }
 }
 
+/**
+* Render an HTML view of a list of sites, highlighting when new work has been posted.
+* @name render
+* @param {Object[]} sites
+* @param {String} sites.name - name of artist / title of site
+* @param {String} sites.url
+* @param {String} sites.category
+* @param {String} [sites.selector] - jQuery selector that will return an element to diff for changes
+* @param {String} lockfile - filename of lockfile to store previous diffs & metadata
+* @param {Object} [opts]
+* @param {Function} opts.template - template function to return str of HTML, given sites
+* @param {Number} opts.expiration - duration in ms for which a given site is still "new", default ms in one month
+**/
 function render(sites, lockfile, opts, cb) {
   var cb = cb || opts;
   if (typeof opts === 'function' || !opts) opts = {};
