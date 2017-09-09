@@ -14,7 +14,23 @@ module.exports = {
 };
 
 function crawl(sites, cb) {
-  async.mapLimit(sites, 100, scrape, cb);
+  async.mapLimit(sites, 10, timedScrape, (err, results) => {
+    if (err) return cb(err, null);
+    var out = results.reduce((out, result) => {
+      if (!result.error) {
+        out.push(result.value);
+      } else {
+        console.warn(`\n${result.error.info}: site unavailable.`);
+      }
+      return out;
+    }, []);
+    cb(null, out);
+  });
+
+  function timedScrape(site, cb) {
+    var _scrape = async.reflect(async.timeout(scrape, 5000, site.url));
+    _scrape(site, cb);
+  }
 
   function scrape(site, cb) {
     fetch(site.url, (err, lastModified, $) => {
