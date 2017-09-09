@@ -20,6 +20,7 @@ function crawl(sites, cb) {
       if (!result.error) {
         out.push(result.value);
       } else {
+        // TODO: figure out a way to gracefully pass warnings through
         console.warn(`\n${result.error.info}: site unavailable.`);
       }
       return out;
