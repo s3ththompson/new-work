@@ -1,14 +1,16 @@
 const test = require('tape');
-const newwork = require('../');
+const NewWork = require('../');
 const yaml = require('../lib/yaml');
 const path = require('path');
 const _ = require('lodash');
+
+var newwork = NewWork();
 
 function writeNop(filename, data, cb) {
   cb(null);
 }
 
-function crawlNop(sites, cb) {
+function crawlNop(sites, emitter, cb) {
   cb(null, sites);
 }
 
@@ -42,7 +44,7 @@ test('render', t => {
       write: writeNop,
       crawl: crawlNop
     };
-    newwork.render(sites, lockfile, opts, (err, str) => {
+    newwork.build(sites, lockfile, opts, (err, str) => {
       t.notOk(err);
       t.ok(str.includes('href="http://oldexample.com/"'));
       t.end();

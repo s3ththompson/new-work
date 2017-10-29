@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 const fs = require('fs');
-const http = require('http');
 const path = require('path');
 
 const _ = require('lodash');
@@ -9,7 +8,6 @@ const argv = require('minimist')(process.argv.slice(2));
 const async = require('async');
 const chalk = require('chalk');
 const compareUrls = require('compare-urls');
-const createHTML = require('create-html');
 const inquirer = require('inquirer');
 const normalizeUrl = require('normalize-url');
 const opn = require('opn');
@@ -20,7 +18,9 @@ const userHome = require('user-home');
 
 const fetch = require('../lib/fetch');
 const yaml = require('../lib/yaml');
-const newwork = require('..');
+const NewWork = require('..');
+
+var newwork = NewWork();
 
 process.title = 'newwork';
 
@@ -30,7 +30,7 @@ const helpText = `Usage: newwork <command> [options]
     <default>                   Run 'newwork serve'
     serve                       Scrape, update, and serve a new-work page
     build                       Scrape, update, and save a new-work page to disk
-    print                       Scrape, update, and print a table to the terminal 
+    print                       Scrape, update, and print a table to the terminal
     add [url]                   Add an URL to your list of sites
     remove [url]                Remove an URL from your list of sites
     ls                          List all sites in your new-work page
@@ -417,66 +417,58 @@ function print() {
 }
 
 function build() {
-  renderHTML(argv.input, argv.lockfile, (err, html) => {
+  yaml.read(argv.input, (err, input) => {
     if (err) exit(err);
-    fs.writeFile(argv.output, html, function(err) {
-      if (err) exit(err);
-      console.log(
-        `Wrote ${chalk.green('new-work')} page to ${chalk.bold(argv.output)}`
-      );
-      exit();
+    var sites = input.sites;
+
+    newwork.on('error', err => {
+      console.warn(err.message);
+    });
+
+    const spinner = ora('Checking for site updates...');
+    spinner.color = 'black';
+    spinner.start();
+    newwork.build(sites, argv.lockfile, (err, html) => {
+      if (err) {
+        spinner.fail();
+        eixt(err);
+      }
+      spinner.succeed();
+      fs.writeFile(argv.output, html, function(err) {
+        if (err) exit(err);
+        console.log(
+          `Wrote ${chalk.green('new-work')} page to ${chalk.bold(argv.output)}`
+        );
+        exit();
+      });
     });
   });
 }
 
 function serve() {
-  renderHTML(argv.input, argv.lockfile, (err, html) => {
+  yaml.read(argv.input, (err, input) => {
     if (err) exit(err);
-    http
-      .createServer((req, resp) => {
-        resp.end(html);
-      })
-      .listen(argv.port, err => {
-        console.log(
-          `Serving ${chalk.green('new-work')} page on ${chalk.bold(
-            'localhost:' + argv.port
-          )}`
-        );
-        opn(`http://localhost:${argv.port}`);
-      });
-  });
-}
-
-function renderHTML(input, lockfile, cb) {
-  yaml.read(input, (err, input) => {
-    if (err) return cb(err, null);
     var sites = input.sites;
+
+    newwork.on('error', err => {
+      console.warn(err.message);
+    });
 
     const spinner = ora('Checking for site updates...');
     spinner.color = 'black';
     spinner.start();
-    newwork.render(sites, lockfile, (err, body) => {
+    newwork.serve(sites, argv.lockfile, { port: argv.port }, (err, port) => {
       if (err) {
         spinner.fail();
-        return cb(err, null);
+        exit(err);
       }
       spinner.succeed();
-
-      var cssFile = path.join(__dirname, '../views/default.css');
-      fs.readFile(cssFile, 'utf8', (err, css) => {
-        if (err) return cb(err, null);
-        var cssTag = `<style type="text/css">
-            ${css}
-          </style>
-          `;
-        var html = createHTML({
-          title: 'New Work',
-          body: body,
-          head: cssTag,
-          lang: 'en'
-        });
-        cb(null, html);
-      });
+      console.log(
+        `Serving ${chalk.green('new-work')} page on ${chalk.bold(
+          'localhost:' + port
+        )}`
+      );
+      opn(`http://localhost:${port}`);
     });
   });
 }

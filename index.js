@@ -1,27 +1,37 @@
+var Emitter = require('events').EventEmitter;
+const fs = require('fs');
+const http = require('http');
+const path = require('path');
+
 const _ = require('lodash');
 const async = require('async');
 const isNewer = require('date-fns/compare_asc');
 const normalizeUrl = require('normalize-url');
 const subMilliseconds = require('date-fns/sub_milliseconds');
+const createHTML = require('create-html');
 
 const fetch = require('./lib/fetch');
 const view = require('./views/default');
 const yaml = require('./lib/yaml');
 
-module.exports = {
-  status: status,
-  render: render
-};
+module.exports = NewWork;
 
-function crawl(sites, cb) {
+function NewWork() {
+  if (!(this instanceof NewWork)) return new NewWork();
+}
+NewWork.prototype = Object.create(Emitter.prototype);
+
+function crawl(sites, emitter, cb) {
   async.mapLimit(sites, 10, timedScrape, (err, results) => {
     if (err) return cb(err, null);
     var out = results.reduce((out, result) => {
       if (!result.error) {
         out.push(result.value);
       } else {
-        // TODO: figure out a way to gracefully pass warnings through
-        console.warn(`\n${result.error.info}: site unavailable.`);
+        emitter.emit(
+          'error',
+          new Error(`\n${result.error.info}: site unavailable.`)
+        );
       }
       return out;
     }, []);
@@ -68,19 +78,7 @@ function diff(lock, sites, expiration) {
   return sites;
 }
 
-/**
-* Get the status of a list of sites to see whether new work has been posted.
-* @name status
-* @param {Object[]} sites
-* @param {String} sites.name - name of artist / title of site
-* @param {String} sites.url
-* @param {String} sites.category
-* @param {String} [sites.selector] - jQuery selector that will return an element to diff for changes
-* @param {String} lockfile - filename of lockfile to store previous diffs & metadata
-* @param {Object} [opts]
-* @param {Number} opts.expiration - duration in ms for which a given site is still "new", default ms in one month
-**/
-function status(sites, lockfile, opts, cb) {
+NewWork.prototype.status = function(sites, lockfile, opts, cb) {
   var cb = cb || opts;
   if (typeof opts === 'function' || !opts) opts = {};
 
@@ -93,7 +91,7 @@ function status(sites, lockfile, opts, cb) {
   readFunc(lockfile, (err, data) => {
     if (err) return cb(err, null);
     lock = data.sites;
-    crawlFunc(sites, (err, sites) => {
+    crawlFunc(sites, this, (err, sites) => {
       if (err) return cb(err, null);
       sites = diff(lock, sites, expiration);
       writeFunc(lockfile, { sites: sites }, err => {
@@ -114,30 +112,47 @@ function status(sites, lockfile, opts, cb) {
     });
     return cleanSites;
   }
-}
+};
 
-/**
-* Render an HTML view of a list of sites, highlighting when new work has been posted.
-* @name render
-* @param {Object[]} sites
-* @param {String} sites.name - name of artist / title of site
-* @param {String} sites.url
-* @param {String} sites.category
-* @param {String} [sites.selector] - jQuery selector that will return an element to diff for changes
-* @param {String} lockfile - filename of lockfile to store previous diffs & metadata
-* @param {Object} [opts]
-* @param {Function} opts.template - template function to return str of HTML, given sites
-* @param {Number} opts.expiration - duration in ms for which a given site is still "new", default ms in one month
-**/
-function render(sites, lockfile, opts, cb) {
+NewWork.prototype.build = function(sites, lockfile, opts, cb) {
   var cb = cb || opts;
   if (typeof opts === 'function' || !opts) opts = {};
-
   var template = opts.template || view;
 
-  status(sites, lockfile, opts, (err, sites) => {
+  this.status(sites, lockfile, opts, (err, sites) => {
     if (err) return cb(err, null);
-    var str = template(sites).toString();
-    cb(null, str);
+    var body = template(sites).toString();
+    var cssFile = path.join(__dirname, 'views/default.css');
+    fs.readFile(cssFile, 'utf8', (err, css) => {
+      if (err) return cb(err, null);
+      var cssTag = `<style type="text/css">
+          ${css}
+        </style>
+        `;
+      var html = createHTML({
+        title: 'New Work',
+        body: body,
+        head: cssTag,
+        lang: 'en'
+      });
+      cb(null, html);
+    });
   });
-}
+};
+
+NewWork.prototype.serve = function(sites, lockfile, opts, cb) {
+  var cb = cb || opts;
+  if (typeof opts === 'function' || !opts) opts = {};
+  var port = opts.port || 3030;
+
+  this.build(sites, lockfile, opts, (err, html) => {
+    if (err) return cb(err, null);
+    http
+      .createServer((req, resp) => {
+        resp.end(html);
+      })
+      .listen(port, err => {
+        cb(null, port);
+      });
+  });
+};
