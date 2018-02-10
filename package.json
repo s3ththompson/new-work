@@ -1,6 +1,6 @@
 {
   "name": "new-work",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Discover when artists post new work.",
   "main": "index.js",
   "bin": {
