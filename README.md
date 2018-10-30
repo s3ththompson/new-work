@@ -1,7 +1,5 @@
 <h1 align="center">new-work</h1>
-
 <h5 align="center">✨ Discover when artists post new work</h5>
-
 <div align="center">
   <a href="https://npmjs.org/package/new-work">
     <img src="https://img.shields.io/npm/v/new-work.svg?style=flat-square" alt="NPM Version" />
@@ -53,23 +51,15 @@ Usage: newwork <command> [options]
 ```
 
 ## Guide
-
 1.  Run `newwork add <url>` to add a site to track.
-
 1.  Confirm the site's title / the artist's name.
-
 1.  Optionally specify a category (e.g. 'Photography').
-
 1.  If the site returns a `last-modified` header, you're done! Otherwise, you must manually specify an HTML element to diff for updates.
-
 1.  Open the site with a web inspector such as Chrome DevTools Elements panel. Search for an HTML element that will change when the site is updated. The could be a thumbnail on the homepage, a menu of projects, or a blog post element.
 
     ![guide](https://user-images.githubusercontent.com/970121/28145836-3ed2cde2-672a-11e7-8e17-cd7c2b097aed.jpg)
-
 1.  Specify a jQuery selector that will return the chosen element. For example, a link element inside a thumbnail with the class `thumb` may be referenced by the selector `.thumb a`. Only the first matched element will be used.
-
 1.  Repeat for additional sites.
-
 1.  Run `newwork` or `newwork serve` to open a list of all your sites. Sites that have been changed in the last 30 days are highlighted with a "new" tag.
 
 ## JS API
